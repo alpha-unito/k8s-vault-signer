@@ -29,6 +29,10 @@ func main() {
 		Use:   "vault-signer",
 		Short: "Vault CSR signer for Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := c.Validate(); err != nil {
+				klog.Exitf("error validating configuration: %s", err)
+			}
+
 			ctx, cancel := context.WithCancel(context.Background())
 
 			vclient, err := vault.NewClient(c.VaultAddress)
@@ -100,9 +104,6 @@ func main() {
 	}
 
 	c.AddFlags(pflag.CommandLine)
-	if err := c.Validate(); err != nil {
-		klog.Exitf("error validating configuration: %s", err)
-	}
 
 	code := cli.Run(cmd)
 	os.Exit(code)

@@ -1,0 +1,108 @@
+# Default values for signer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: alphaunito/k8s-vault-signer
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+vault:
+  address:
+    scheme: http
+    hostname: ""
+    port: 8200
+  auth:
+    # Existing secret with the Vault authentication details.
+    # The secret should be formatted as follows:
+    #
+    # [Global]
+    # auth-type = approle
+    #
+    # [AppRole]
+    # role-id = <Role ID>
+    # secret-id = <Secret ID>
+    #
+    # The name of an existing secret with the Vault authentication configuration
+    secretName: ""
+    # The secret key that contains the Vault authentication configuration
+    secretKey: ""
+  # The mount point of the target Vault PKI
+  pki: ""
+  # The Vault role to invoke when signing CSRs
+  role: ""
+  # The TTL of the generated certificates
+  ttl: "8760h"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+role:
+  # Annotations to add to the cluster role
+  annotations: {}
+  # The name of the cluster role to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+roleBinding:
+  # Annotations to add to the cluster role
+  annotations: { }
+  # The name of the cluster role to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+serviceAccount:
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
