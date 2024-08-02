@@ -66,7 +66,7 @@ ROLE_ID=$(vault read auth/approle/role/kubernetes-signer/role-id)
 SECRET_ID=$(vault write -f auth/approle/role/kubernetes-signer/secret-id)
 ```
 
-Then, reate an `auth.conf` configuration file for the Vault Kubernetes signer with the following syntax, substituting the `${ROLE_ID}` and `${SECRET_ID}` placeholders with the values returned by the previos commands
+Then, create an `auth.conf` configuration file for the Vault Kubernetes signer with the following syntax, substituting the `${ROLE_ID}` and `${SECRET_ID}` placeholders with the values returned by the previos commands
 
 ```ini
 [Global]
@@ -109,6 +109,46 @@ Then, deploy a Helm release with the following command
 
 ```bash
 helm install --values values.yaml vault-signer ./helm
+```
+
+### Sign Kubernetes CSRs 
+
+The Vault signer handles CSRs that specify a `signerName` equal to `unito.it/vault-signer`. To test that everything works properly, create a `csr.yaml` file with the following content
+
+```yaml
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: vault-test-csr
+spec:
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0dZVzVuWld4aE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTByczhJTHRHdTYxakx2dHhWTTJSVlRWMDNHWlJTWWw0dWluVWo4RElaWjBOCnR2MUZtRVFSd3VoaUZsOFEzcWl0Qm0wMUFSMkNJVXBGd2ZzSjZ4MXF3ckJzVkhZbGlBNVhwRVpZM3ExcGswSDQKM3Z3aGJlK1o2MVNrVHF5SVBYUUwrTWM5T1Nsbm0xb0R2N0NtSkZNMUlMRVI3QTVGZnZKOEdFRjJ6dHBoaUlFMwpub1dtdHNZb3JuT2wzc2lHQ2ZGZzR4Zmd4eW8ybmlneFNVekl1bXNnVm9PM2ttT0x1RVF6cXpkakJ3TFJXbWlECklmMXBMWnoyalVnald4UkhCM1gyWnVVV1d1T09PZnpXM01LaE8ybHEvZi9DdS8wYk83c0x0MCt3U2ZMSU91TFcKcW90blZtRmxMMytqTy82WDNDKzBERHk5aUtwbXJjVDBnWGZLemE1dHJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBR05WdmVIOGR4ZzNvK21VeVRkbmFjVmQ1N24zSkExdnZEU1JWREkyQTZ1eXN3ZFp1L1BVCkkwZXpZWFV0RVNnSk1IRmQycVVNMjNuNVJsSXJ3R0xuUXFISUh5VStWWHhsdnZsRnpNOVpEWllSTmU3QlJvYXgKQVlEdUI5STZXT3FYbkFvczFqRmxNUG5NbFpqdU5kSGxpT1BjTU1oNndLaTZzZFhpVStHYTJ2RUVLY01jSVUyRgpvU2djUWdMYTk0aEpacGk3ZnNMdm1OQUxoT045UHdNMGM1dVJVejV4T0dGMUtCbWRSeEgvbUNOS2JKYjFRQm1HCkkwYitEUEdaTktXTU0xMzhIQXdoV0tkNjVoVHdYOWl4V3ZHMkh4TG1WQzg0L1BHT0tWQW9FNkpsYWFHdTlQVmkKdjlOSjVaZlZrcXdCd0hKbzZXdk9xVlA3SVFjZmg3d0drWm89Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  signerName: unito.it/vault-signer
+  expirationSeconds: 86400
+  usages:
+    - client auth
+```
+
+Then, create the Kubernetes CSR object and approve it using the following commands
+
+```bash
+kubectl apply -f csr.yaml
+kubectl certificate approve vault-test-csr
+```
+
+At this point, the CSR should be in the `Approved,Issued` status when inspected using the following command
+
+```bash
+kubectl get csr vault-test-csr
+```
+
+Plus, the following command should display a valid X509 certificate
+
+```bash
+kubectl get csr vault-test-csr --output=json |  \
+  jq .status.certificate |                      \
+  tr -d '"' |                                   \
+  base64 -d |                                   \
+  openssl x509 -text -noout
 ```
 
 ## Acknowledgment
