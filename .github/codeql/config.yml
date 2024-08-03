@@ -1,0 +1,3 @@
+name: "Kubernetes Vautl Signer CodeQL configuration"
+queries:
+  - uses: security-and-quality
