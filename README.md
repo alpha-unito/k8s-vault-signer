@@ -80,12 +80,58 @@ secret-id = ${SECRET_ID}
 Finally, create a secret from the previous file
 
 ```kubectl
-kubectl create secret generic --from-file=auth.conf vault-auth-config
+kubectl create secret generic   \
+    --namespace=vault-signer    \
+    --from-file=auth.conf       \
+    vault-auth-config
 ```
 
 #### Kubernetes Authentication
 
-TODO
+The Vault [Kubernetes](https://developer.hashicorp.com/vault/docs/auth/kubernetes) authentication can be used to authenticate with Vault using a Kubernetes `ServiceAccount` token. This authentication method can be enabled through the following command
+
+```bash
+vault auth enable kubernetes
+```
+
+Then, it is necessary to register the `ServiceAccount` JWT token and the Kubernetes cluster to Vault using this command, where the value of the `issuer` field should be equal to the value of the `--service-account-issuer` option of the `kube-apiserver` command running on the Kubernetes cluster control plane
+
+```bash
+vault write auth/kubernetes/config                \
+  kubernetes_host=<Kubernetes hostname and port>  \
+  kubernetes_ca_cert=<PEM-encoded Kubernetes CA>  \
+  issuer=<ServiceAccount issuer>
+```
+
+At this point, it is necessary to create a Vault role for the Kubernetes signer
+
+```bash
+vault write auth/kubernetes/role/kubernetes-signer  \
+  bound_service_account_names="vault-signer"        \
+  bound_service_account_namespaces="vault-signer"   \
+  policies="kubernetes-signer-policy"               \
+  token_max_ttl="10m"                               \
+  token_ttl="60s"
+```
+
+Then, create an `auth.conf` configuration file for the Vault Kubernetes signer with the following syntax
+
+```ini
+[Global]
+auth-type = kubernetes
+
+[Kubernetes]
+role-name = kubernetes-signer
+```
+
+Finally, create a secret from the previous file
+
+```kubectl
+kubectl create secret generic   \
+    --namespace=vault-signer    \
+    --from-file=auth.conf       \
+    vault-auth-config
+```
 
 ### Deploy the Vault Signer
 
@@ -108,7 +154,7 @@ vault:
 Then, deploy a Helm release with the following command
 
 ```bash
-helm install --values values.yaml vault-signer ./helm
+helm install --namespace vault-signer --values values.yaml vault-signer ./helm
 ```
 
 ### Sign Kubernetes CSRs 

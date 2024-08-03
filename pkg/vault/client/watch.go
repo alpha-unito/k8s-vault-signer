@@ -3,7 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
-	
+
 	vault "github.com/hashicorp/vault/api"
 
 	"k8s.io/klog/v2"
@@ -28,9 +28,10 @@ func NewWatcher(a *Authenticator, vclient *vault.Client, secret *vault.Secret) (
 
 func (w *Watcher) Watch(ctx context.Context, vclient *vault.Client) {
 	for {
-		w.watch()
+		w.watch(ctx)
 
-		klog.Info("retry logging into Vault")
+		logger := klog.FromContext(ctx)
+		logger.V(4).Info("retry logging into Vault")
 
 		secret, err := w.authenticator.Authenticate(ctx, vclient)
 		if err != nil {
@@ -46,22 +47,23 @@ func (w *Watcher) Watch(ctx context.Context, vclient *vault.Client) {
 	}
 }
 
-func (w *Watcher) watch() {
+func (w *Watcher) watch(ctx context.Context) {
 	go w.watcher.Start()
 	defer w.watcher.Stop()
 
+	logger := klog.FromContext(ctx)
 	for {
 		select {
 		case err := <-w.watcher.DoneCh():
 			if err != nil {
-				klog.Infof("failed to renew Vault token: %v", err)
+				logger.V(4).Error(err, "failed to renew Vault token")
 			} else {
-				klog.Infof("token can no longer be renewed")
+				logger.V(4).Info("token can no longer be renewed")
 			}
 			return
 
 		case _ = <-w.watcher.RenewCh():
-			klog.Infof("succesfully renewed Vault token")
+			logger.V(4).Info("succesfully renewed Vault token")
 		}
 	}
 }
