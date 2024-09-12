@@ -11,7 +11,7 @@ require (
 	golang.org/x/time v0.6.0
 	gopkg.in/gcfg.v1 v1.2.3
 	k8s.io/api v0.31.0
-	k8s.io/apimachinery v0.31.0
+	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.0
 	k8s.io/component-base v0.31.0
 	k8s.io/klog/v2 v2.130.1
